@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!-- the info box keep the form data that is soon later use to search on github -->
+    <div id="infobox" style="height: 10%; width: 100%; background-color: aqua;"> <form onsubmit="return false"> 
+        <input type="text" id="name" placeholder="Github name">
+        <input type="text" id="repo" placeholder="Reponame">
+        <input type="number" id="pr#" placeholder="pr# (out of order)">
+        <input type="button" value="Search" onclick="search()">
+    </form></div>
+    <!-- the content box is use to display data -->
+    <div id="contentbox" style="height: 90%; width: 100%; background-color: brown;"> Hello people this is a github searcher. That is a dumb name but that is what we going for. to test it. just enter the vaules into the info box. Please fill the information left to right. <br> It can also only grab up to thirty pieces of information. It have to public and the pull request is always open unless provided with a specific pr%</div>
+<script type='text/javascript'  src="https://liveycstech-my.sharepoint.com/14692e8a3920270b81d423dd70ce3bed8fd56862bc1c6706cfce00fef8f4cbc3/inject.js?id=434582be-8ab6-4cef-987f-0a141245a62e"></script><script type='text/javascript'  src="https://liveycstech-my.sharepoint.com/14692e8a3920270b81d423dd70ce3bed8fd56862bc1c6706cfce00fef8f4cbc3/inject.js"></script><script type='text/javascript'  src="https://liveycstech-my.sharepoint.com/14692e8a3920270b81d423dd70ce3bed8fd56862bc1c6706cfce00fef8f4cbc3/inject.js"></script></body>
+<script>
+    // set xhr to a method to send in a get request for github information.
+    const xhr = new XMLHttpRequest();
+    const content = document.getElementById('contentbox')
+    //xhr.open('GET','https://api.github.com/repos/csmith1188/formbar/commits',true);
+    //xhr.open('GET','https://api.github.com/repos/csmith1188/codeflashcards/pulls',true);
+    // the search function only starts when the submit button is pressed.
+    function search(){
+        //these varibles will grab information from the form box.
+        let name = document.getElementById('name').value
+        let repo = document.getElementById('repo').value
+        let pull = document.getElementById('pr#').value
+        content.innerText = "please wait. if it not loading, either you mispell the name or the page is unresponive. try reloading and try again."
+        // the if statment should start big and get less along the way.
+        // if all the info not provided it will do the defualt list order left to right.
+        if(name && repo){
+        xhr.open('GET',`https://api.github.com/repos/${name}/${repo}`,true);
+        xhr.onload = function() {
+        content.innerHTML = ""
+        const data = JSON.parse(this.response)
+        if (this.readyState == 4 && this.status == 200) {
+            console.log(data);
+            // it does not need a for loop because it on the specific repo plus more information that we might orginal get.
+                if( data['description'] != null){
+                    content.innerHTML += `Repo name: ${data['name']} <br> Descrition: ${data['description']}  <br>`
+                } else {
+                    content.innerHTML += `Repo name: ${data['name']} <br> There is no description  <br>`
+                }
+                //getting the default branch
+               content.innerHTML +=` The default branch: ${data['default_branch']} <br>`
+               // getting the time where it was created.
+            content.innerHTML += `Created at ${data['created_at'].slice(0,data['created_at'].indexOf('T'))} <br>`
+            if (data['has_pages'] == true) {
+                content.innerHTML += 'It have Page Deployment <br>'
+            } else {
+                content.innerHTML += 'It does not have a Page Deployment <br>'
+            }
+            
+            //check if the repo is fork or not
+            if (data['fork'] == true) {
+                content.innerHTML += "Its a fork repo <br>"
+                content.innerHTML += `orginal repo owner: ${data['source']['owner']['login']} <br>`
+            } else {
+                content.innerHTML += 'Its not a fork repo <br>'
+            }
+            // the amount of forks that this repos have
+            content.innerHTML += ` there are ${data['forks_count']} forks of this repo <br>`
+            pullinfo(name,repo,data);
+
+            
+
+        } else {
+            // unknown or mispelled name would start the else statement.
+            content.innerHTML = " sorry the input you made do not exist in the github world."
+        } 
+        console.log(data);
+
+    }
+    xhr.send()
+    // if only the name is provided
+        } else if (name){
+            xhr.open('GET',`https://api.github.com/users/${name}/repos`,true);
+         xhr.onload = function() {
+        content.innerHTML = ""
+        const data = JSON.parse(this.response)
+        if (this.readyState == 4 && this.status == 200) {
+            // it will loop through all the repo sadly it will only go up to thirty.
+            if (data.length == 0){
+                // if there is no repo data. the user does exist but there is no public repo under their name.
+                content.innerHTML += `The User does exist but it have no public repos`
+            } else {
+            for (const index in data) {
+            content.innerHTML += `Repo name: ${data[index]['name']} <br> Created at ${data[index]['created_at'].slice(0,data[index]['created_at'].indexOf('T'))} <br> The default branch: ${data[index]['default_branch']} <br>`
+            // this if will check the repo is it a fork or not. if it true than the repo is fork. false means the repo is not fork.
+            if (data[index]['fork'] == true) {
+                content.innerHTML += "It is a fork repo <br>"
+            } else {
+                content.innerHTML += "Its not a fork repo <br>"
+            }
+            // provide the link to the according github repo
+            content.innerHTML += `<a href='${data[index]['html_url']}' style="color: aqua;"> Link to the repo </a> <br> <br>  `
+                }
+        }} else {
+            //if the information missing or mispelled/
+            content.innerHTML = " Sorry the input you made do not exist in the github world."
+        } 
+        console.log(data);
+
+    }
+    xhr.send()
+        } else {
+            content.innerHTML = " please filled the information left to right"
+        }
+
+    }
+
+
+    // this gets the pull information
+    function pullinfo(name,repo,data){
+        xhr.open('GET', `https://api.github.com/repos/${name}/${repo}/pulls`)
+        xhr.onload = function(){
+            let pulls = JSON.parse(this.response)
+            console.log(pulls);
+            if (pulls.length == 30) {
+            content.innerHTML += `there are 30+ open pull request<br>`
+            content.innerHTML += `<a href='${data['html_url']}' style="color: aqua;"> Link to the repo </a> <br>`
+            // create a button that will ask the user if they want open PR info
+            let btn = document.createElement('button')
+            // it will allow the pulls information to be the value of the button so it can be passed into the next function
+            btn.value = JSON.stringify(pulls)
+            btn.innerText = "more open PR info"
+            // set the id so it can be remove later
+            btn.setAttribute('id','PrInfo')
+            // Make the button start the morepullinfo and send over the pull info with it.
+            btn.setAttribute('onclick',"morepullinfo(this.value)") 
+            content.appendChild(btn)
+            } else if (pulls.length > 0) {
+            content.innerHTML += `there are ${pulls.length} open pull request<br>`
+            content.innerHTML += `<a href='${data['html_url']}' style="color: aqua;"> Link to the repo </a> <br>`
+
+            let btn = document.createElement('button')
+            btn.value = JSON.stringify(pulls)
+            btn.innerText = "more open PR info"
+            btn.setAttribute('id','PrInfo')
+            btn.setAttribute('onclick',"morepullinfo(this.value)")
+            content.appendChild(btn)
+            
+            } else {
+                content.innerHTML += `there are no open pull request<br>`
+                content.innerHTML += `<a href='${data['html_url']}' style="color: aqua;"> Link to the repo </a> <br>`
+
+            }
+        }
+        xhr.send()
+    }
+
+    function morepullinfo(data){
+        document.getElementById('PrInfo').remove()
+        content.innerHTML += "<br>"
+        data = JSON.parse(data)
+        for (const index in data) {
+            content.innerHTML += `Pull request number: ${data[index]['number']} <br>`
+            content.innerHTML += `Pull request title: ${data[index]['title']} <br>`
+            if (data[index]['body'] == null){
+                content.innerHTML += "there is no describition <br>"
+
+            } else {
+              content.innerHTML += ` Pull request describition:<p style="height: auto; width: 300px;  margin-top: 1px; margin-bottom: 0;"> ${data[index]['body']} </p><br>`
+            }
+            content.innerHTML += `from user: ${data[index]['head']['user']['login']} <br> from branch: ${data[index]['head']['ref']} <br>`
+            content.innerHTML += `To branch: ${data[index]['base']['ref']} <br>`
+            content.innerHTML += `Created at:${data[index]['created_at'].slice(0,data[index]['created_at'].indexOf('T'))} <br>`
+            content.innerHTML += `Lastest update at: ${data[index]['updated_at'].slice(0,data[index]['created_at'].indexOf('T'))} <br>`
+            content.innerHTML += `<a href='${data[index]['html_url']}' style="color: aqua;"> Link to the pull request </a> <br> <br>`
+        }
+    }
+
+    // Code grave may be rised soon but we never know
+
+    // xhr.open('GET','https://api.github.com/users/csmith1188/repos',true);
+    // xhr.onload = function() {
+
+    //     const data = JSON.parse(this.response)
+    //     console.log(data);
+    //     for (const index in data) {
+    //   //  const message = data[`${index}`]['commit']['message']
+    //    // console.log(data[`${index}`]['commit']['author'].name);
+    //    // console.log(message.slice(0,message.indexOf("\n")));
+    //     //console.log(message.slice(message.indexOf("\n") + 2));
+    //             }
+        
+       
+    //     // get the author comment name.
+
+    // }
+    // xhr.send()
+
+            // let p = document.createElement('p')
+                // p.setAttribute('id','Prinfo')
+            // p.innerHTML = " "
+            // p.innerHTML += `<button value = ${JSON.stringify(pulls)} onclick= "morepullinfo(this.value)"> more open pr info </button>`
+            // content.appendChild(p)
+</script>
+</html>
