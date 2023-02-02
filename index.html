@@ -164,7 +164,7 @@
                 content.innerHTML += "there is no describition <br>"
 
             } else {
-              content.innerHTML += ` Pull request describition:<p style="height: auto; width: 300px;  margin-top: 1px; margin-bottom: 0;"> ${data[index]['body']} </p><br>`
+              content.innerHTML += ` Pull request describition:<p style="height: auto; width: 300px;  margin-top: 1px; margin-bottom: 0;"> "${data[index]['body']}" </p><br>`
             }
             content.innerHTML += `from user: ${data[index]['head']['user']['login']} <br> from branch: ${data[index]['head']['ref']} <br>`
             content.innerHTML += `To branch: ${data[index]['base']['ref']} <br>`
